@@ -219,202 +219,638 @@ Before returning the JSON, verify:
 
 UI_TEMPLATE = """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ATS Resume & CV Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 40px auto; max-width: 900px; background: #f8fafc; color: #0f172a; line-height: 1.5; }
-        .card { background: white; padding: 32px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; border: 1px solid #e2e8f0; }
-        h1 { margin-top: 0; font-size: 22px; color: #0f172a; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }
-        textarea { width: 100%; height: 160px; padding: 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: inherit; outline: none; }
-        textarea:focus { border-color: #0f172a; }
-        button { background: #0f172a; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; }
-        button:hover { background: #1e293b; }
-        button:disabled { background: #94a3b8; cursor: not-allowed; }
-        .btn-download { display: inline-flex; align-items: center; background: #059669; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; margin-right: 10px; font-size: 13px; }
-        .btn-download:hover { background: #047857; }
-        .score-badge { font-size: 28px; font-weight: 800; color: #2563eb; }
-        .tag { display: inline-block; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 3px 10px; border-radius: 4px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; font-weight: 600; }
-        
-        .progress-container { display: none; margin-top: 20px; }
-        .progress-bar-bg { width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
-        .progress-bar-fill { width: 0%; height: 100%; background: #0f172a; transition: width 0.4s ease; }
-        .thinking-box { background: #0f172a; padding: 14px; border-radius: 6px; font-family: "Courier New", monospace; font-size: 12px; color: #38bdf8; max-height: 100px; overflow-y: auto; }
+        /* ── Reset & Base ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .history-item { border-bottom: 1px solid #e2e8f0; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .history-item:last-child { border-bottom: none; }
+        :root {
+            --bg-deep: #06060f;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-card-hover: rgba(255, 255, 255, 0.15);
+            --text-primary: #f0f0f5;
+            --text-secondary: #8b8b9e;
+            --text-muted: #55556a;
+            --accent: #818cf8;
+            --accent-glow: rgba(129, 140, 248, 0.35);
+            --accent-2: #c084fc;
+            --accent-green: #34d399;
+            --accent-green-glow: rgba(52, 211, 153, 0.3);
+            --accent-red: #f87171;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-xs: 6px;
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated Background ── */
+        .bg-scene {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+        }
+        .bg-orb {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35;
+            animation: orbFloat 20s ease-in-out infinite alternate;
+        }
+        .bg-orb:nth-child(1) { width: 500px; height: 500px; background: #6366f1; top: -10%; left: -5%; animation-duration: 22s; }
+        .bg-orb:nth-child(2) { width: 400px; height: 400px; background: #a855f7; bottom: -10%; right: -5%; animation-duration: 18s; animation-delay: -5s; }
+        .bg-orb:nth-child(3) { width: 300px; height: 300px; background: #3b82f6; top: 50%; left: 40%; animation-duration: 25s; animation-delay: -10s; }
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 40px) scale(0.95); }
+            100% { transform: translate(30px, -20px) scale(1.05); }
+        }
+
+        /* grain overlay */
+        .bg-scene::after {
+            content: ''; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        /* ── Layout ── */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 780px; margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+
+        /* ── Header ── */
+        .hero {
+            text-align: center; margin-bottom: 40px;
+            animation: fadeSlideUp 0.8s var(--smooth) both;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(129, 140, 248, 0.12); border: 1px solid rgba(129, 140, 248, 0.2);
+            padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+            color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); animation: pulse 2s ease-in-out infinite; }
+        .hero h1 {
+            font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.15;
+            background: linear-gradient(135deg, #f0f0f5 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p { color: var(--text-secondary); font-size: 15px; margin-top: 8px; }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 32px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s var(--spring);
+            animation: fadeSlideUp 0.7s var(--smooth) both;
+        }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
+        .card:hover {
+            border-color: var(--border-card-hover);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05);
+        }
+
+        .card-title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.2px; color: var(--text-secondary);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .card-title .icon { font-size: 16px; }
+
+        /* ── Form ── */
+        .form-label {
+            display: block; font-size: 14px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 8px;
+        }
+        textarea {
+            width: 100%; height: 180px; padding: 16px;
+            font-size: 14px; font-family: 'Inter', sans-serif;
+            background: rgba(255,255,255,0.03); color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-sm);
+            outline: none; resize: vertical;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+        }
+        textarea::placeholder { color: var(--text-muted); }
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 28px; border: none; border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: transform 0.25s var(--spring), box-shadow 0.3s ease;
+        }
+        .btn:active { transform: scale(0.96) !important; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            color: white;
+            box-shadow: 0 4px 20px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 30px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .btn-primary:disabled {
+            opacity: 0.4; cursor: not-allowed;
+            transform: none !important; box-shadow: none !important;
+        }
+        /* shimmer on hover */
+        .btn-primary::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        .btn-primary:hover::after { transform: translateX(100%); }
+
+        .btn-download {
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+            color: var(--accent-green); text-decoration: none;
+            padding: 10px 20px; border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: all 0.25s var(--spring);
+        }
+        .btn-download:hover {
+            background: rgba(52, 211, 153, 0.18);
+            border-color: rgba(52, 211, 153, 0.4);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 4px 20px var(--accent-green-glow);
+        }
+
+        .btn-danger {
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            color: var(--accent-red); padding: 8px 16px;
+            border-radius: var(--radius-xs); font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.25s var(--spring);
+        }
+        .btn-danger:hover {
+            background: rgba(248, 113, 113, 0.15);
+            border-color: rgba(248, 113, 113, 0.35);
+            transform: translateY(-1px);
+        }
+
+        /* ── Progress ── */
+        .progress-container { display: none; margin-top: 24px; animation: fadeSlideUp 0.4s var(--smooth); }
+        .progress-bar-bg {
+            width: 100%; height: 4px; border-radius: 999px; overflow: hidden;
+            background: rgba(255,255,255,0.06);
+        }
+        .progress-bar-fill {
+            width: 0%; height: 100%; border-radius: 999px;
+            background: linear-gradient(90deg, #818cf8, #c084fc, #818cf8);
+            background-size: 200% 100%;
+            animation: shimmerBar 2s linear infinite;
+            transition: width 0.6s var(--smooth);
+        }
+        @keyframes shimmerBar { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .thinking-box {
+            margin-top: 14px; padding: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 12px; color: var(--accent);
+            max-height: 120px; overflow-y: auto;
+            line-height: 1.8;
+        }
+        .thinking-box .line { opacity: 0; animation: typeLine 0.3s var(--smooth) forwards; }
+        .thinking-box .line::before { content: '› '; color: var(--text-muted); }
+
+        /* ── Results ── */
+        .results-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+        .result-meta { flex: 1; min-width: 200px; }
+        .result-role { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+        .result-company { font-size: 14px; color: var(--text-secondary); }
+
+        /* Animated Score Ring */
+        .score-ring-container { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+        .score-ring { transform: rotate(-90deg); }
+        .score-ring-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 6; }
+        .score-ring-fill {
+            fill: none; stroke: url(#scoreGradient); stroke-width: 6;
+            stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2;
+            transition: stroke-dashoffset 1.5s var(--smooth);
+        }
+        .score-value {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 800; color: var(--text-primary);
+        }
+        .score-label { font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .divider {
+            border: none; border-top: 1px solid rgba(255,255,255,0.06);
+            margin: 24px 0;
+        }
+        .section-label {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted); margin-bottom: 14px;
+        }
+
+        .keywords-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 5px 12px; border-radius: 999px;
+            font-size: 12px; font-weight: 600;
+            animation: popIn 0.35s var(--spring) both;
+            transition: transform 0.2s var(--spring);
+        }
+        .tag:hover { transform: scale(1.08); }
+        .tag-high { background: rgba(248, 113, 113, 0.12); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2); }
+        .tag-medium { background: rgba(251, 191, 36, 0.1); color: #fcd34d; border: 1px solid rgba(251,191,36,0.2); }
+        .tag-low { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+
+        .download-group { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        /* ── History ── */
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px; margin-bottom: 8px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: var(--radius-sm);
+            transition: all 0.25s var(--spring);
+            animation: fadeSlideUp 0.4s var(--smooth) both;
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+            transform: translateX(4px);
+        }
+        .history-role { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+        .history-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+        .history-score { color: var(--accent); font-weight: 700; }
+        .history-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .history-actions .btn-download { padding: 7px 14px; font-size: 12px; }
+
+        .empty-state {
+            text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px;
+        }
+        .empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+
+        /* ── Footer bar ── */
+        .footer-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 12px; padding: 0 4px;
+            animation: fadeSlideUp 0.7s var(--smooth) both;
+            animation-delay: 0.4s;
+        }
+        .footer-info { font-size: 12px; color: var(--text-muted); }
+
+        /* ── Animations ── */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.6); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+        @keyframes typeLine {
+            from { opacity: 0; transform: translateX(-6px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scoreCount {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes cardReveal {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .container { padding: 20px 16px 40px; }
+            .card { padding: 24px; }
+            .hero h1 { font-size: 26px; }
+            .results-header { flex-direction: column; align-items: center; text-align: center; }
+            .history-item { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>ATS Technical Resume & Cover Letter Studio</h1>
-        <form id="processForm">
-            <label><b>Target Job Description:</b></label><br><br>
-            <textarea id="jd" name="job_description" placeholder="Paste target job description text here..." required></textarea><br><br>
-            <button type="submit" id="submitBtn">Generate Tailored Resume & CV</button>
-        </form>
+    <!-- Animated background -->
+    <div class="bg-scene">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
 
-        <div id="progressContainer" class="progress-container">
-            <div class="progress-bar-bg">
-                <div id="progressBar" class="progress-bar-fill"></div>
+    <!-- SVG gradient def for score ring -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#c084fc"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="container">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge"><span class="dot"></span> Gemini 3.6 Flash Powered</div>
+            <h1>ATS Resume & Cover Letter Studio</h1>
+            <p>Paste a job description. Get a perfectly tailored resume & cover letter in seconds.</p>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+            <div class="card-title"><span class="icon">✦</span> Job Description</div>
+            <form id="processForm">
+                <textarea id="jd" name="job_description" placeholder="Paste the target job description here…" required></textarea>
+                <div style="margin-top: 16px;">
+                    <button type="submit" id="submitBtn" class="btn btn-primary">
+                        <span id="btnText">Generate Resume & Cover Letter</span>
+                        <span id="btnSpinner" style="display:none;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4m-7.07-15.07l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg>
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-bar-bg">
+                    <div id="progressBar" class="progress-bar-fill"></div>
+                </div>
+                <div id="thinkingBox" class="thinking-box"></div>
             </div>
-            <div id="thinkingBox" class="thinking-box">> Initializing process...</div>
+        </div>
+
+        <!-- Results Card -->
+        <div id="resultsCard" class="card" style="display: none;">
+            <div class="card-title"><span class="icon">◆</span> Analysis Results</div>
+            <div class="results-header">
+                <div class="result-meta">
+                    <div class="result-role" id="resRole"></div>
+                    <div class="result-company" id="resCompany"></div>
+                </div>
+                <div>
+                    <div class="score-ring-container">
+                        <svg class="score-ring" width="100" height="100" viewBox="0 0 100 100">
+                            <circle class="score-ring-bg" cx="50" cy="50" r="40"/>
+                            <circle class="score-ring-fill" id="scoreCircle" cx="50" cy="50" r="40"/>
+                        </svg>
+                        <div class="score-value" id="resScore">0%</div>
+                    </div>
+                    <div class="score-label">ATS Match</div>
+                </div>
+            </div>
+
+            <hr class="divider">
+            <div class="section-label">Missing Keywords</div>
+            <div id="resKeywords" class="keywords-container"></div>
+
+            <hr class="divider">
+            <div class="section-label">Download Documents</div>
+            <div class="download-group">
+                <a id="dlResume" href="#" class="btn-download" download>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Resume PDF
+                </a>
+                <a id="dlCv" href="#" class="btn-download" download>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                    Cover Letter PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="card">
+            <div class="card-title"><span class="icon">◷</span> Recent History</div>
+            <div id="historyList"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            <span class="footer-info">Files auto-expire after 24 hours</span>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="clearHistory()" class="btn-danger">Clear History</button>
+                <button onclick="killServer()" class="btn-danger" style="border-color: rgba(248,113,113,0.35);">⏻ Shutdown</button>
+            </div>
         </div>
     </div>
 
-    <div id="resultsCard" class="card" style="display: none;">
-        <h2>Analysis Results</h2>
-        <p><b>Target Role:</b> <span id="resRole" style="font-weight: bold;"></span> (<span id="resCompany"></span>)</p>
-        <p><b>ATS Match Score:</b> <span id="resScore" class="score-badge">0%</span></p>
-        <p><b>Missing Keywords:</b></p>
-        <div id="resKeywords"></div>
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
-        <h3>Generated Documents</h3>
-        <a id="dlResume" href="#" class="btn-download" download>📄 Download Resume (PDF)</a>
-        <a id="dlCv" href="#" class="btn-download" download>📝 Download Cover Letter (PDF)</a>
-    </div>
-
-    <div class="card">
-        <h2>Saved History (Last 24 Hours)</h2>
-        <div id="historyList">Loading history...</div>
-    </div>
-    <!-- Add this button in your UI_TEMPLATE -->
-<button onclick="killServer()" style="background: #dc2626; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; float: right;">🛑 Power Off Studio</button>
-
 <script>
+// ── Thinking Box ──
+let thinkingLineCount = 0;
+function logThinking(msg) {
+    const box = document.getElementById("thinkingBox");
+    const line = document.createElement("div");
+    line.className = "line";
+    line.textContent = msg;
+    line.style.animationDelay = (thinkingLineCount * 0.05) + "s";
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+    thinkingLineCount++;
+}
+
+function setProgress(percent) {
+    document.getElementById("progressBar").style.width = percent + "%";
+}
+
+// ── Score Animation ──
+function animateScore(score) {
+    const circle = document.getElementById("scoreCircle");
+    const display = document.getElementById("resScore");
+    const circumference = 2 * Math.PI * 40; // r=40
+    const offset = circumference - (score / 100) * circumference;
+    circle.style.strokeDashoffset = offset;
+
+    // Count up animation
+    let current = 0;
+    const step = Math.ceil(score / 40);
+    const counter = setInterval(() => {
+        current = Math.min(current + step, score);
+        display.textContent = current + "%";
+        if (current >= score) clearInterval(counter);
+    }, 30);
+}
+
+// ── History ──
+async function loadHistory() {
+    const res = await fetch('/history');
+    const data = await res.json();
+    const container = document.getElementById("historyList");
+
+    if (Object.keys(data).length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No history yet — generate your first resume!</div>';
+        return;
+    }
+
+    let html = "";
+    let i = 0;
+    for (const [jobId, item] of Object.entries(data)) {
+        const dateStr = new Date(item.timestamp * 1000).toLocaleString();
+        html += `
+            <div class="history-item" style="animation-delay: ${i * 0.05}s">
+                <div>
+                    <div class="history-role">${item.role_title} <span style="color: var(--text-muted); font-weight: 400;">@</span> ${item.company_name}</div>
+                    <div class="history-meta">
+                        <span>${dateStr}</span>
+                        <span>·</span>
+                        <span class="history-score">${item.match_score}% match</span>
+                    </div>
+                </div>
+                <div class="history-actions">
+                    <a href="/download/${item.resume_file}" class="btn-download" download>Resume</a>
+                    <a href="/download/${item.cv_file}" class="btn-download" download>CV</a>
+                </div>
+            </div>
+        `;
+        i++;
+    }
+    container.innerHTML = html;
+}
+
+// ── Form Submit ──
+document.getElementById("processForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+    const btnSpinner = document.getElementById("btnSpinner");
+    const progress = document.getElementById("progressContainer");
+    const resultsCard = document.getElementById("resultsCard");
+    const jdText = document.getElementById("jd").value;
+
+    btn.disabled = true;
+    btnText.textContent = "Processing…";
+    btnSpinner.style.display = "inline";
+    progress.style.display = "block";
+    resultsCard.style.display = "none";
+    thinkingLineCount = 0;
+    document.getElementById("thinkingBox").innerHTML = "";
+    document.getElementById("scoreCircle").style.strokeDashoffset = 251.2;
+
+    setProgress(15);
+    logThinking("Initializing request…");
+
+    setTimeout(() => { setProgress(30); logThinking("Loading Master Resume data…"); }, 500);
+    setTimeout(() => { setProgress(50); logThinking("Analyzing JD requirements & mapping skills…"); }, 1500);
+    setTimeout(() => { setProgress(60); logThinking("Pruning & optimizing via Gemini 3.6 Flash…"); }, 3000);
+
+    try {
+        const response = await fetch("/process", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ job_description: jdText })
+        });
+
+        setProgress(85);
+        logThinking("Rendering strict 1-page layout via Playwright…");
+
+        const result = await response.json();
+
+        setProgress(100);
+        logThinking("✓ Tailored documents generated successfully!");
+
+        // Populate results
+        document.getElementById("resRole").innerText = result.role_title;
+        document.getElementById("resCompany").innerText = result.company_name;
+
+        // Keywords with importance coloring
+        const kwContainer = document.getElementById("resKeywords");
+        kwContainer.innerHTML = "";
+        (result.missing_keywords || []).forEach((kw, idx) => {
+            const keyword = typeof kw === 'object' ? kw.keyword : kw;
+            const importance = typeof kw === 'object' ? (kw.importance || 'low') : 'low';
+            const tagClass = importance === 'high' ? 'tag-high' : importance === 'medium' ? 'tag-medium' : 'tag-low';
+            const el = document.createElement("span");
+            el.className = "tag " + tagClass;
+            el.textContent = keyword;
+            el.style.animationDelay = (idx * 0.06) + "s";
+            kwContainer.appendChild(el);
+        });
+
+        document.getElementById("dlResume").href = "/download/" + result.resume_file;
+        document.getElementById("dlCv").href = "/download/" + result.cv_file;
+
+        // Show results with animation
+        resultsCard.style.display = "block";
+        resultsCard.style.animation = "cardReveal 0.6s var(--spring) both";
+        animateScore(result.match_score);
+
+        await loadHistory();
+
+    } catch (err) {
+        logThinking("✗ Error: Processing failed. Check console for details.");
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btnText.textContent = "Generate Resume & Cover Letter";
+        btnSpinner.style.display = "none";
+    }
+});
+
+// ── Server Controls ──
 async function killServer() {
     if (!confirm("Shut down the app server completely?")) return;
-    
-    try {
-        await fetch('/shutdown', { method: 'POST' });
-    } catch (e) {
-        // Ignored — server dies mid-flight
-    }
-    
+    try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
     document.body.innerHTML = `
-        <div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0f172a; color:white; font-family:sans-serif;">
+        <div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Inter',sans-serif;">
             <div style="text-align:center;">
-                <h1 style="color:#f87171; margin-bottom:8px;">🛑 Studio Off</h1>
-                <p style="color:#94a3b8;">Port 5000 freed. You can close this tab now.</p>
+                <div style="font-size:48px; margin-bottom:16px; opacity:0.6;">⏻</div>
+                <h1 style="color:#f87171; font-size:24px; font-weight:800; margin-bottom:8px;">Studio Offline</h1>
+                <p style="color:#55556a; font-size:14px;">Port 5000 freed. You can close this tab.</p>
             </div>
         </div>
     `;
 }
-</script>
 
-
-
-    <script>
-        function logThinking(msg) {
-            const box = document.getElementById("thinkingBox");
-            box.innerHTML += "<br>> " + msg;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function setProgress(percent) {
-            document.getElementById("progressBar").style.width = percent + "%";
-        }
-
-        async function loadHistory() {
-            const res = await fetch('/history');
-            const data = await res.json();
-            const container = document.getElementById("historyList");
-            
-            if (Object.keys(data).length === 0) {
-                container.innerHTML = "<p style='color: #64748b; font-size: 14px;'>No saved files in the last 24 hours.</p>";
-                return;
-            }
-
-            let html = "";
-            for (const [jobId, item] of Object.entries(data)) {
-                const dateStr = new Date(item.timestamp * 1000).toLocaleString();
-                html += `
-                    <div class="history-item">
-                        <div>
-                            <b style="color: #0f172a;">${item.role_title}</b> @ ${item.company_name} <br>
-                            <small style="color: #64748b;">${dateStr} | Match Score: ${item.match_score}%</small>
-                        </div>
-                        <div>
-                            <a href="/download/${item.resume_file}" class="btn-download" download>Resume PDF</a>
-                            <a href="/download/${item.cv_file}" class="btn-download" download>CV PDF</a>
-                        </div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-        }
-
-        document.getElementById("processForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById("submitBtn");
-            const progress = document.getElementById("progressContainer");
-            const resultsCard = document.getElementById("resultsCard");
-            const jdText = document.getElementById("jd").value;
-
-            btn.disabled = true;
-            progress.style.display = "block";
-            resultsCard.style.display = "none";
-            document.getElementById("thinkingBox").innerHTML = "> Initializing request...";
-
-            setProgress(25);
-            logThinking("Loading Master Resume data...");
-            
-            setTimeout(() => {
-                setProgress(55);
-                logThinking("Pruning & Optimizing via Gemini 3.6 Flash Engine...");
-            }, 800);
-
-            try {
-                const response = await fetch("/process", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: new URLSearchParams({ job_description: jdText })
-                });
-
-                setProgress(85);
-                logThinking("Rendering strict 1-page layout via Playwright...");
-
-                const result = await response.json();
-                
-                setProgress(100);
-                logThinking("Success! Tailored documents generated.");
-
-                document.getElementById("resRole").innerText = result.role_title;
-                document.getElementById("resCompany").innerText = result.company_name;
-                document.getElementById("resScore").innerText = result.match_score + "%";
-                
-                const kwContainer = document.getElementById("resKeywords");
-                kwContainer.innerHTML = "";
-                (result.missing_keywords || []).forEach(kw => {
-                    kwContainer.innerHTML += `<span class="tag">${kw}</span>`;
-                });
-
-                document.getElementById("dlResume").href = "/download/" + result.resume_file;
-                document.getElementById("dlCv").href = "/download/" + result.cv_file;
-                
-                resultsCard.style.display = "block";
-                await loadHistory();
-
-            } catch (err) {
-                logThinking("Error: Processing failed.");
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
-        loadHistory();
-    </script>
-    <button onclick="clearHistory()" style="background: #dc2626; margin-left: 10px;">Clear History & Files</button>
-
-<script>
 async function clearHistory() {
-    if (!confirm("Are you sure you want to clear all history and generated PDFs?")) return;
+    if (!confirm("Clear all history and generated PDFs?")) return;
     await fetch('/clear-history', { method: 'POST' });
     loadHistory();
-    alert("History cleared successfully!");
 }
-</script>
 
+// ── Init ──
+loadHistory();
+</script>
 </body>
 </html>
 """
