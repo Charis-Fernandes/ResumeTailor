@@ -2,9 +2,6 @@
 
 A local Flask app that takes a master resume and a target job description, then uses Gemini to generate an ATS-optimized resume, matching skills, and a tailored cover letter. It renders both as PDFs and saves recent outputs locally for download.
 
-<img width="2940" height="1912" alt="Screenshot 2026-09-05 at 11 18 03" src="https://github.com/user-attachments/assets/3b767356-341d-43fe-b81b-2091f13fe95f" />
-
-
 ## Features
 
 - Paste a target job description
